@@ -38,7 +38,6 @@ import json
 import optparse
 import sys
 import os
-from collections import OrderedDict
 
 import xml.etree.cElementTree as ET
 
@@ -55,12 +54,13 @@ def strip_tag(tag):
 def elem_to_internal(elem, strip_ns=1, strip=1):
     """Convert an Element into an internal dictionary (not JSON!)."""
 
-    d = OrderedDict()
+    d = {}
     elem_tag = elem.tag
     if strip_ns:
         elem_tag = strip_tag(elem.tag)
-    for key, value in list(elem.attrib.items()):
-        d['@' + key] = value
+    else:
+        for key, value in list(elem.attrib.items()):
+            d['@' + key] = value
 
     # loop over subelements to merge them
     for subelem in elem:
@@ -112,7 +112,7 @@ def internal_to_elem(pfsh, factory=ET.Element):
     Element class as the factory parameter.
     """
 
-    attribs = OrderedDict()
+    attribs = {}
     text = None
     tail = None
     sublist = []
@@ -124,7 +124,7 @@ def internal_to_elem(pfsh, factory=ET.Element):
     if isinstance(value, dict):
         for k, v in list(value.items()):
             if k[:1] == "@":
-                attribs[k[1:]] = v
+                attribs[k[1:]] = str(v)
             elif k == "#text":
                 text = v
             elif k == "#tail":
@@ -135,7 +135,7 @@ def internal_to_elem(pfsh, factory=ET.Element):
             else:
                 sublist.append(internal_to_elem({k: v}, factory=factory))
     else:
-        text = value
+        text = str(value)
     e = factory(tag, attribs)
     for sub in sublist:
         e.append(sub)
@@ -152,7 +152,7 @@ def elem2json(elem, options, strip_ns=1, strip=1):
         elem = elem.getroot()
 
     if options.pretty:
-        return json.dumps(elem_to_internal(elem, strip_ns=strip_ns, strip=strip), indent=4, separators=(',', ': '))
+        return json.dumps(elem_to_internal(elem, strip_ns=strip_ns, strip=strip), sort_keys=True, indent=4, separators=(',', ': '))
     else:
         return json.dumps(elem_to_internal(elem, strip_ns=strip_ns, strip=strip))
 
